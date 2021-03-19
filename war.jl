@@ -1,3 +1,159 @@
+cd("D:/Documents/Ecole/EPFL/Master_Project/Synchronisation_XY_Model")
+using JLD,Dates,Statistics,Distributed,SharedArrays,Distributions,Hungarian,LsqFit,LinearAlgebra,LambertW
+include("methods.jl");
+include("methods_vortices.jl");
+using Plots,ColorSchemes,LaTeXStrings
+pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10.colors[1:10],grid=false,markerstrokewidth=0,linewidth=1.3,size=(400,400),thickness_scaling = 1.5)
+
+data = load("data/Horizontal_Vortices_L200_LowTemp.jld")
+    L    = data["L"]
+    R    = data["R"]
+    Ts   = data["Ts"]
+    Vars = data["Vars"]
+    number_free_vortex = data["number_free_vortex"] ; number_free_vortex_avg = mean(number_free_vortex,dims=4) ; number_free_vortex_std = std(number_free_vortex,dims=4)
+
+p2b = plot(xlabel="T",legend=:left,size=(400,400))
+    for i in eachindex(Vars)
+        plot!(Ts,(number_free_vortex_avg[1:end,i,end,1]),m=:.,ms=3,rib=number_free_vortex_std[:,i,end,1],line=nothing,c=i)
+    end
+    p0 = [11,0.7,0.5] # beta, Tc, nu
+    @. model3(x, p) = (x .> p[2]).*exp(p[1]*((Complex(x).-p[2])/p[2]).^p[3])
+    @. model2(x, p) = (x .> p[2]).*exp(p[1]*((Complex(x).-p[2])/p[2]).^0.5)
+
+    # Fit blue
+    col = 1
+    plot!([NaN,NaN],[NaN,NaN],rib=0,c=col,label="σ² = $(Vars[col])")
+
+    firstind = 5
+    fit2 = curve_fit(model2, Ts[1:end-firstind], number_free_vortex_avg[1:end-firstind,col,end,1], p0[1:2])
+    fit3 = curve_fit(model3, Ts[1:end-firstind], number_free_vortex_avg[1:end-firstind,col,end,1], p0)
+    p3 = string.(round.(coef(fit3),digits=2))
+    # plot!(Ts,real.(model3(Ts,coef(fit3))),c=col)
+    plot!(Ts,real.(model2(Ts,coef(fit2))),c=col,line=:solid)
+    # plot!(Ts,real.(model(Ts,coef(fit))),c=col,label=L"\beta = "*p[1]*L", T_c = "*p[2]*L", \nu = "*p[3])
+    # scatter!((Ts[end-firstind],number_free_vortex_avg[end-firstind,col,end,1]),c=col,ms=6)
+
+    # Fit orange
+    col = 2
+    firstind = 12
+    fit2 = curve_fit(model2, Ts[1:end-firstind], number_free_vortex_avg[1:end-firstind,col,end,1], p0[1:2])
+    fit3 = curve_fit(model3, Ts[1:end-firstind], number_free_vortex_avg[1:end-firstind,col,end,1], p0)
+    p = string.(round.(coef(fit3),digits=2))
+    plot!([NaN,NaN],[NaN,NaN],rib=0,c=col,label="σ² = $(Vars[col])")
+    # plot!(Ts,real.(model3(Ts,coef(fit3))),c=col)
+    plot!(Ts,real.(model2(Ts,coef(fit2))),c=col,line=:solid)
+    # plot!(Ts,real.(model3(Ts,coef(fit))),c=col,label=L"\beta = "*p[1]*L", T_c = "*p[2]*L", \nu = "*p[3])
+    # scatter!((Ts[end-firstind],number_free_vortex_avg[end-firstind,col,end,1]),c=col,ms=6)
+
+    # Fit green
+    col = 3
+    firstind = 18
+    fit2 = curve_fit(model2, Ts[1:end-firstind], number_free_vortex_avg[1:end-firstind,col,end,1], p0[1:2])
+    fit3 = curve_fit(model3, Ts[1:end-firstind], number_free_vortex_avg[1:end-firstind,col,end,1], p0)
+    p = string.(round.(coef(fit3),digits=2))
+    plot!([NaN,NaN],[NaN,NaN],rib=0,c=col,label="σ² = $(Vars[col])")
+    # plot!(Ts,real.(model3(Ts,coef(fit3))),c=col)
+    plot!(Ts,real.(model2(Ts,coef(fit2))),c=col,line=:solid)
+    # println("Fits")
+    # println("2 : ",round.(coef(fit2),digits=2)," gof ", sum(abs.(fit2.resid[1:end-firstind]))/2/length(fit2.resid[1:end-firstind]))
+    # println("3 : ",round.(coef(fit3),digits=2)," gof ", sum(abs.(fit3.resid[1:end-firstind]))/3/length(fit3.resid[1:end-firstind]))
+
+
+    # plot!(Ts,real.(model3(Ts,coef(fit))),c=col,label=L"\beta = "*p[1]*L", T_c = "*p[2]*L", \nu = "*p[3])
+    # scatter!((Ts[end-firstind],number_free_vortex_avg[end-firstind,col,end,1]),c=col,ms=6)
+    xlims!((-0.050,1.05))
+    ylims!((-10,250))
+    annotate!(0.05,230,text(L"n_v",15))
+    annotate!(.97,10,text("(b)",12))
+    # plot!([NaN,NaN],c=:grey,label="Fits "*L"\exp\left(α \sqrt{\frac{T-T_c}{T_c}}\,\right)")
+    # plot!([NaN,NaN],line=:solid,c=:grey,label="Fit 3-param")
+
+
+c=5.4
+    L = load("data/Vortices_PhaseSpace_L200_LowTemp.jld","L")
+    Vars = load("data/Vortices_PhaseSpace_L200_LowTemp.jld","Vars")
+    Ts = load("data/Vortices_PhaseSpace_L200_LowTemp.jld","Ts")
+    init = load("data/Vortices_PhaseSpace_L200_LowTemp.jld","init")
+    number_free_vortex_avg = mean(load("data/Vortices_PhaseSpace_L200_LowTemp.jld","number_free_vortex"),dims=4)
+    # number_all_vortex_avg = mean(load("data/Vortices_PhaseSpace_L200_LowTemp.jld","number_all_vortex"),dims=4)
+
+    p2a=plot(xlabel="σ²",ylabel="T",size=(600,400),yguidefontrotation=-90)
+    heatmap!((Vars),Ts,log10.(number_free_vortex_avg[:,:,end,1] .+1),c=cgrad([:blue,:green,:orange,:red]),interpolate = :true,colorbar_title=L"\log_{10}(n_v+1)")
+    Tkt = 0.82 ; xx= Array(0:0.0001:7 /log(L)^2) ; plot!(xx,Tkt*(1 .- sqrt.(xx)*log(L)/sqrt(c)),c=:white,lw=2)
+    xlims!((0,.25))
+    ylims!((0,1))
+    annotate!(0.225,0.075,text("(a)", 14, :black))
+    # annotate!(0.135,0.85,text(L"T\!_c\,(\sigma) = T\!_{KT}\,(1-a\,\sigma\,\ln\, L)",15,:white))
+
+plot(p2a,p2b,layout=2,size=(900,400))
+# savefig("figures_draft\\free_vortices.svg")
+# savefig("figures_draft\\free_vortices.pdf")
+
+## New method for generating vortices configurations
+cd("D:/Documents/Ecole/EPFL/Master_Project/Synchronisation_XY_Model")
+using JLD,Dates,Statistics,Distributed,SharedArrays,Distributions,Hungarian,LsqFit,LinearAlgebra,LambertW
+include("methods.jl");
+include("methods_vortices.jl");
+using Plots,ColorSchemes,LaTeXStrings
+pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10.colors[1:10],grid=false,markerstrokewidth=0,linewidth=1.3,size=(400,400),thickness_scaling = 1.5)
+
+L = 32
+r0 = 16
+grille = [(i,j) for i=1:L, j=1:L]
+xs     = [grille[n][1] for n in 1:length(grille)]
+ys     = [grille[n][2] for n in 1:length(grille)]
+
+thetas = create_pair_vortices_v2(L,r0)
+
+pp = quiver(xs,ys,quiver=(vec(cos.(thetas)),vec(sin.(thetas))),size=(500,500),color=:black)
+    scatter!((16,24),m=:circle,c=:blue,ms=12)
+    scatter!((16,8),m = (8, 12.0, :circle,:white, stroke(3, :blue)))
+    xticks!([0,10,20,30],string.([0,10,20,30]))
+# savefig("figures_draft/manual_double_vortex_relaxed.pdf")
+# savefig("figures_draft/manual_double_vortex_not_relaxed.pdf")
+
+thetas = create_isolated_vortex(L,L,1)
+pp = quiver(xs,ys,quiver=(vec(cos.(thetas)),vec(sin.(thetas))),size=(500,500),color=:black)
+    scatter!((16,16),m=:circle,c=:blue,ms=12)
+    xticks!([0,10,20,30],string.([0,10,20,30]))
+    # savefig("figures_draft/manual_single_vortex.pdf")
+
+## Film for vortex displacement on boundary
+cd("D:/Documents/Ecole/EPFL/Master_Project/Synchronisation_XY_Model")
+using JLD,Dates,Statistics,Distributed,SharedArrays,Distributions,Hungarian,LsqFit,LinearAlgebra,LambertW
+include("methods.jl");
+include("methods_vortices.jl");
+using Plots,ColorSchemes,LaTeXStrings
+gr(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10.colors[1:10],grid=false,markerstrokewidth=0,linewidth=1.3,size=(400,400),thickness_scaling = 1.5)
+
+T,Var,L,ttr,dt,r0,thetas_hist,energy_hist,n,every = load("data_vortices\\traj_T0.05_Var0.1_champ.jld","T","Var","L","ttr","dt","r0","thetas_hist","energy_hist","n","every")
+# smoothedE = (energy_hist[2:end].+abs(minimum(energy_hist[2:end])))
+debut = 4000
+fin   = 9999
+traj = Vector{Tuple{Int64,Int64}}(undef,fin-debut+1)
+for i in debut:fin
+    a,b = spot_vortex_antivortex(thetas_hist[floor(Int,i/every)])
+    traj[i-debut+1] = b[1]
+end
+
+cols = [:white,:blue,:green,:orange,:red,:white]
+
+z = @elapsed anim = @animate for i in debut:20:fin
+    thetas = thetas_hist[floor(Int,i/every)]
+    heatmap(mod.(thetas',2π),c=cgrad(cols),colorbar=nothing,size=(1024,1024))
+
+    plot!(traj[1:i-debut+1],c=:black,line=:dot)
+    plot!(traj[i-debut+1:end],c=:black)
+    for vortex in spot_vortices(thetas_hist[floor(Int,i/every)])
+        if vortex[3]<0
+            scatter!((vortex[1:2]).+(0.5,0.5),m=:circle,c=:black,ms=9)
+        end
+    end
+    xlims!((1,200))
+    ylims!((1,200))
+end
+mp4(anim,"../presentation\\figures\\test_film_fast.mp4",fps=60)
+
 ## C(t,tw)
 cd("D:/Documents/Ecole/EPFL/Master_Project/Synchronisation_XY_Model")
 using JLD,Dates,Statistics,Distributed,SharedArrays,Distributions,Hungarian,LsqFit,LinearAlgebra
