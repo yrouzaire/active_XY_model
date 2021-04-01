@@ -1,4 +1,4 @@
-"Copyright (c) 2020 Y.Rouzaire All Rights Reserved."
+"Copyright (c) 2021 Y.Rouzaire All Rights Reserved."
 
 include("configuration.jl") ;
 using Distributed ; #addprocs(min(nproc,R))

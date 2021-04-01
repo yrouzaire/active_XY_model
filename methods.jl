@@ -1,4 +1,4 @@
-"Copyright (c) 2020 Y.Rouzaire All Rights Reserved."
+"Copyright (c) 2021 Y.Rouzaire All Rights Reserved."
 
 ## Methods to deal with a square lattice LxL with periodic BCs
 @everywhere function dist(a::Tuple{Int,Int},b::Tuple{Int,Int},L::Int)::Float64  # euclidian distance with Periodic BCs
@@ -679,17 +679,17 @@ end
 end
 
 ## Visualisation methods
-@everywhere function smooth(X) ## for smoother plots
-    smoothed = copy(X)
-    coeff = [1,2,1]
-    coeff = coeff./sum(coeff)
-    # @assert isodd(length(coeff))
-    s = Int(floor(length(coeff)/2))
-    for i in 1+s:length(smoothed)-s
-        smoothed[i] = X[i-s:i+s]'*coeff
-    end
-    return smoothed
-end
+# @everywhere function smooth(X) ## for smoother plots
+#     smoothed = copy(X)
+#     coeff = [1,2,1]
+#     coeff = coeff./sum(coeff)
+#     # @assert isodd(length(coeff))
+#     s = Int(floor(length(coeff)/2))
+#     for i in 1+s:length(smoothed)-s
+#         smoothed[i] = X[i-s:i+s]'*coeff
+#     end
+#     return smoothed
+# end
 
 # @everywhere function smooth(X;over=3) ## for smoother plots
 #     smoothed = copy(X)

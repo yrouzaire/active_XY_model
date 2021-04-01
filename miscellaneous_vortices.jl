@@ -1,4 +1,4 @@
-"Copyright (c) 2020 Y.Rouzaire All Rights Reserved."
+"Copyright (c) 2021 Y.Rouzaire All Rights Reserved."
 using Distributions,Statistics,JLD,SpecialFunctions,LsqFit
 cd("D:/Documents/Ecole/EPFL/Master_Project/vortices_study")
 include("methods_vortices.jl");
