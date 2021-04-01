@@ -1,3 +1,99 @@
+## No difference +/- 1 defects
+cd("D:/Documents/Ecole/EPFL/Master_Project/Synchronisation_XY_Model")
+using JLD,Dates,Statistics,Distributed,Distributions,Hungarian,LsqFit,LinearAlgebra
+include("methods.jl");
+include("methods_vortices.jl");
+using Plots,ColorSchemes,LaTeXStrings
+pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10.colors[1:10],grid=false,markerstrokewidth=0,linewidth=1.3,size=(400,400),thickness_scaling = 1.5)
+
+L,R,r0s,TV,tmax2,save_every2,locations,distance = JLD.load("../vortices_study/data_vortices/pair_defaults_PBC_L200_T0.1_Var0.1.jld","L","R","r0s","TV","tmax","save_every","locations","distance")
+gg = zeros(Union{Missing, Float64},(2,1274,100))
+# NB : locations = 2×1274×1×3×100 Array{Tuple{Union{Missing, Int16},Union{Missing, Int16}},5}:
+for i in 1:100
+    for j in 1:1274
+        gg[1,j,i] = dist_missing(locations[1,j,1,1,i] , locations[1,1,1,1,i],200).^2
+        gg[2,j,i] = dist_missing(locations[2,j,1,1,i] , locations[2,1,1,1,i],200).^2
+    end
+end
+gg_avg = zeros(2,1274)
+for j in 1:1274
+    gg_avg[1,j] = mean(skipmissing(gg[1,j,:]))
+    gg_avg[2,j] = mean(skipmissing(gg[2,j,:]))
+end
+plot(gg_avg[1,2:end],axis=:log)
+plot!(gg_avg[2,2:end])
+plot!(0.05Array(1:1200).^1.5)
+
+## Films pour SM
+cd("D:/Documents/Ecole/EPFL/Master_Project/Synchronisation_XY_Model")
+using JLD,Dates,Statistics,Distributed,Distributions,Hungarian,LsqFit,LinearAlgebra
+include("methods.jl");
+include("methods_vortices.jl");
+using Plots,ColorSchemes,LaTeXStrings
+pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10.colors[1:10],grid=false,markerstrokewidth=0,linewidth=1.3,size=(400,400),thickness_scaling = 1.5)
+cols = [:white,:blue,:green,:orange,:red,:white]
+
+L=200
+r0 = 50
+T = 0.1
+Var = 0.
+
+    # transients
+thetas = create_pair_vortices_v2(L,r0)
+omegas = rand(Normal(0,sqrt(Var)),L,L)
+t = 0.0
+while t<200
+    global t += dt
+    global thetas = update(thetas,omegas,L,T,dt)
+end
+
+    # record
+tmax = 4000 ; dt = determine_dt(T,Var) ; save_every = 50 ; imax = round(Int,tmax/dt/save_every)
+thetas_hist = Vector{Array{Float64,2}}(undef,imax)
+z1 = @elapsed for i in 1:imax
+    for j in 1:save_every
+        global thetas = update(thetas,omegas,L,T,dt)
+    end
+    thetas_hist[i] = thetas
+end
+println("Runtime = $(round(Int,z1)) seconds")
+
+
+traj = Matrix{Tuple{Int64,Int64}}(undef,(2,imax))
+imaxi = imax
+for i in 1:imax
+    a,b = spot_vortex_antivortex(thetas_hist[i])
+    try
+        traj[1,i] = a[1]
+        traj[2,i] = b[1]
+    catch
+        global imaxi = i-1 # annihilation frame
+        break
+    end
+end
+println("$imaxi/$imax")
+z = @elapsed anim = @animate for i in 1:imaxi
+    thetas = thetas_hist[i]
+    heatmap(mod.(thetas',2π),c=cgrad(cols),colorbar=nothing,size=(512,512))
+
+    plot!(traj[1,1:imaxi],c=:black)
+    plot!(traj[2,1:imaxi],c=:black,line=:dot)
+    for vortex in spot_vortices(thetas_hist[i])
+        if vortex[3]>0 scatter!((vortex[1:2]).+(0.5,0.5),m=:circle,c=:black,ms=9)
+        else scatter!((vortex[1:2]).+(0.5,0.5),m = (8, 9.0, :circle,:transparent, stroke(3, :black)))
+        end
+    end
+    xlims!((1,200))
+    ylims!((1,200))
+    annotate!(165,185,text(L"t="*string(round(Int,i*dt*save_every)),15,:black))
+end
+println("Runtime = $(round(Int,z)) seconds")
+# mp4(anim,"figures_draft\\film_SM_ActiveXY.mp4",fps=25)
+mp4(anim,"figures_draft\\film_SM_XY_annihilation_.mp4",fps=25)
+
+
+
+##
 cd("D:/Documents/Ecole/EPFL/Master_Project/Synchronisation_XY_Model")
 using JLD,Dates,Statistics,Distributed,SharedArrays,Distributions,Hungarian,LsqFit,LinearAlgebra,LambertW
 include("methods.jl");
@@ -14,7 +110,7 @@ data = load("data/Horizontal_Vortices_L200_LowTemp.jld")
 
 p2b = plot(xlabel="T",legend=:left,size=(400,400))
     for i in eachindex(Vars)
-        plot!(Ts,(number_free_vortex_avg[1:end,i,end,1]),m=:.,ms=3,rib=number_free_vortex_std[:,i,end,1],line=nothing,c=i)
+        plot!(Ts,(number_free_vortex_avg[1:end,i,end,1]),m=:.,ms=3,rib=0number_free_vortex_std[:,i,end,1],line=nothing,c=i)
     end
     p0 = [11,0.7,0.5] # beta, Tc, nu
     @. model3(x, p) = (x .> p[2]).*exp(p[1]*((Complex(x).-p[2])/p[2]).^p[3])
@@ -69,7 +165,7 @@ p2b = plot(xlabel="T",legend=:left,size=(400,400))
     # plot!([NaN,NaN],line=:solid,c=:grey,label="Fit 3-param")
 
 
-c=5.4
+c=5.16
     L = load("data/Vortices_PhaseSpace_L200_LowTemp.jld","L")
     Vars = load("data/Vortices_PhaseSpace_L200_LowTemp.jld","Vars")
     Ts = load("data/Vortices_PhaseSpace_L200_LowTemp.jld","Ts")

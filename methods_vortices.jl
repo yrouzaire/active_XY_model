@@ -58,39 +58,63 @@ function create_isolated_vortex(H,W,q)
     return thetas
 end
 
-function create_pair_vortices(L,r0)
+# function create_pair_vortices_v1(L,r0)
+#     #= Check for meaningfulness of the defaults separation,
+#     otherwise the defaults will annihilate with relaxation =#
+#     @assert r0 ≤ 0.75L "Error : r0 is too large. "
+#     @assert iseven(r0) "Error : r0 has to be even. "
+#
+#     L2  = round(Int,L/2)
+#     r02 = floor(Int,r0/2)
+#
+#     #= Create each default separately and juxtapose them.
+#     Very interesting fact : the anti-default can be created
+#     by flipping one dimension of the defaut (hence the reverse
+#     operation performed by "end:-1:1") =#
+#     default  = create_isolated_vortex(L,L2,1)
+#     thetas   = cat(default[:,end:-1:1],default,dims=2)
+#
+#     # Smooth domain walls in order not to create news vortices when relaxing
+#     thetas[1:3,:] = thetas[end-2:end,:] = zeros(3,L)
+#
+#     # Enforce the distance between defaults
+#     if r0 < L2
+#         extra = L2 - r0
+#         thetas[:,extra+1:L2+floor(Int,extra/2)] = thetas[:,1:L2-floor(Int,extra/2)]
+#         for i in 1:extra
+#             thetas[:,i] = thetas[:,end]
+#         end
+#     elseif r0 > L2
+#         lack = r0 - L2
+#         thetas[:,1:L2-lack] = thetas[:,lack:L2-1]
+#         for i in L2-lack:L2
+#             thetas[:,i] = thetas[:,L2+1]
+#         end
+#     end
+#
+#     # Let the system relax, while enforcing periodic BCs
+#     thetas = relax(thetas)
+#
+#     return thetas
+# end
+
+function create_pair_vortices_v2(L,r0)
     #= Check for meaningfulness of the defaults separation,
     otherwise the defaults will annihilate with relaxation =#
-    @assert r0 ≤ 0.75L "Error : r0 is too large. "
+    @assert r0 ≤ 0.5L  "Error : r0 is too large. "
     @assert iseven(r0) "Error : r0 has to be even. "
 
     L2  = round(Int,L/2)
     r02 = floor(Int,r0/2)
 
-    #= Create each default separately and juxtapose them.
-    Very interesting fact : the anti-default can be created
-    by flipping one dimension of the defaut (hence the reverse
-    operation performed by "end:-1:1") =#
-    default  = create_isolated_vortex(L,L2,1)
-    thetas   = cat(default[:,end:-1:1],default,dims=2)
-
-    # Smooth domain walls in order not to create news vortices when relaxing
-    thetas[1:3,:] = thetas[end-2:end,:] = zeros(3,L)
-
-    # Enforce the distance between defaults
-    if r0 < L2
-        extra = L2 - r0
-        thetas[:,extra+1:L2+floor(Int,extra/2)] = thetas[:,1:L2-floor(Int,extra/2)]
-        for i in 1:extra
-            thetas[:,i] = thetas[:,end]
-        end
-    elseif r0 > L2
-        lack = r0 - L2
-        thetas[:,1:L2-lack] = thetas[:,lack:L2-1]
-        for i in L2-lack:L2
-            thetas[:,i] = thetas[:,L2+1]
+    thetas = zeros(L,L)
+    for i in 1:L
+        for j in 1:L
+            thetas[i,j] = atan(j-L2-r02,i-L2) - atan(j-L2+r02,i-L2)
         end
     end
+    # Smooth domain walls in order not to create news vortices when relaxing
+    thetas[1:3,:] = thetas[end-2:end,:] = zeros(3,L)
 
     # Let the system relax, while enforcing periodic BCs
     thetas = relax(thetas)

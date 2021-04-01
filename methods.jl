@@ -732,7 +732,7 @@ end
 #     return twinsp
 # end
 # twiny(plt::Plots.Plot = current()) = twiny(plt[1])
-
+# #
 @everywhere function number_decimals(x::Number)::Int
     ndigits = 0
     while !isinteger(x) && ndigits < 4 # gardefou pour les nombres à écriture décimale infinie
