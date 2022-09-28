@@ -1,4 +1,5 @@
-"Copyright (c) 2021 Y.Rouzaire All Rights Reserved."
+
+"Copyright (c) 2020 Y.Rouzaire All Rights Reserved."
 
 ## Handling locations as Tuple{Int16,Int16}
 
@@ -726,6 +727,7 @@ function remove_negative(series,threshold=0)
     end
     return result
 end
+
 # Physics
 function SD(L,nT,nVar,R,locations::Array{Union{Missing, Tuple{Int16,Int16}},4})
     SD = Array{Union{Number,Missing}}(undef,(length(0:save_every:tmax/dt),nT,nVar,R))
@@ -749,7 +751,7 @@ function SD(L,nT,nVar,R,locations::Array{Union{Missing, Tuple{Int16,Int16}},4})
         end
     end
 
-    return MSD_avg,MSD_std
+    return MSD_avg,MSD_std# square displacement
 end
 
 function SD(L,nT,nVar,R,locations::Array{Union{Missing, Tuple{Int16,Int16}},5})
@@ -776,7 +778,33 @@ function SD(L,nT,nVar,R,locations::Array{Union{Missing, Tuple{Int16,Int16}},5})
         end
     end
 
-    return MSD_avg,MSD_std
+    return MSD_avg,MSD_std # square displacement
+end
+
+function SV(L,nT,nVar,R,locations::Array{Union{Missing, Tuple{Int16,Int16}},4},DT) # square velocity
+    SV = Array{Union{Number,Missing}}(undef,(length(0:save_every:tmax/dt),nT,nVar,R))
+    for r in 1:R
+        for j in 1:nVar
+            for i in 1:nT
+                SV[1,i,j,r] = NaN
+                for t in 2:size(SV)[1]
+                    SV[t,i,j,r] = dist(locations[t,i,j,r], locations[t-1,i,j,r],L)^2/DT^2
+                end
+            end
+        end
+    end
+    MSV_avg = Array{Number}(undef,(size(SV)[1],nT,nVar))
+    MSV_std = Array{Number}(undef,(size(SV)[1],nT,nVar))
+    for j in 1:nVar
+        for i in 1:nT
+            for t in 1:size(SV)[1]
+                MSV_avg[t,i,j] = mean(skipmissing(SV[t,i,j,:]))
+                MSV_std[t,i,j] =  std(skipmissing(SV[t,i,j,:]))
+            end
+        end
+    end
+
+    return MSV_avg,MSV_std
 end
 
 # function remove_duplicates(series)::Vector{Tuple{Int16,Int16}}
